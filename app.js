@@ -1,3 +1,31 @@
+ // Import required modules
+const express = require('express');
+const fetch = require('node-fetch');
+
+// Create an Express app
+const app = express();
+
+// Middleware to parse JSON bodies (with increased limit for larger payloads)
+app.use(express.json({ limit: '3mb' }));
+
+// Set port and environment variables
+const port = process.env.PORT || 3000;
+const verifyToken = process.env.VERIFY_TOKEN;
+const accessToken = process.env.ACCESS_TOKEN;
+
+// Route for webhook verification (GET requests)
+app.get('/', (req, res) => {
+  const { 'hub.mode': mode, 'hub.challenge': challenge, 'hub.verify_token': token } = req.query;
+
+  if (mode === 'subscribe' && token === verifyToken) {
+    console.log('WEBHOOK VERIFIED');
+    res.status(200).send(challenge);
+  } else {
+    res.status(403).end();
+  }
+});
+
+// Route for incoming webhooks (POST requests)
 app.post('/', async (req, res) => {
   const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 19);
   console.log(`\n\nWebhook received ${timestamp}\n`);
@@ -60,4 +88,9 @@ app.post('/', async (req, res) => {
   }
 
   res.sendStatus(200);
+});
+
+// Start the server
+app.listen(port, () => {
+  console.log(`\nListening on port ${port}\n`);
 });
